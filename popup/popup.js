@@ -7,111 +7,188 @@ function getCN(subject) {
 }
 
 /**
- * Parses a Distinguished Name string (Subject or Issuer) into a formatted HTML list.
+ * Parses a Distinguished Name string into a <ul> element for side-by-side display.
  */
 function parseDistinguishedName(dn) {
+  const list = document.createElement('ul');
+  list.className = 'dn-list';
+  
   const sanitizedDn = dn.replace(/"([^"]+)"/g, (match, p1) => p1.replace(/,/g, '&#44;'));
   const parts = sanitizedDn.split(',');
-  let html = '<ul class="dn-list">';
+
   parts.forEach(part => {
     if (part.includes('=')) {
       const [key, ...valueParts] = part.split('=');
       const value = valueParts.join('=').replace(/&#44;/g, ',');
-      html += `<li><strong>${key.trim()}</strong><span>${value.trim()}</span></li>`;
+
+      const listItem = document.createElement('li');
+      
+      const keyStrong = document.createElement('strong');
+      keyStrong.textContent = key.trim();
+
+      const valueSpan = document.createElement('span');
+      valueSpan.textContent = value.trim();
+      
+      listItem.appendChild(keyStrong);
+      listItem.appendChild(valueSpan);
+      list.appendChild(listItem);
     }
   });
-  html += '</ul>';
-  return html;
+  return list;
 }
 
 /**
- * Formats the details for a single certificate.
+ * Formats the details for a single certificate into a <dl> element.
  */
 function formatCertDetails(cert) {
   const formatDate = (epoch) => new Date(epoch).toLocaleDateString();
+  
+  const dl = document.createElement('dl');
 
-  return `
-    <dl>
-      <dt class="group-header">Subject & Issuer</dt>
-      <dt>Subject</dt> <dd>${parseDistinguishedName(cert.subject)}</dd>
-      <dt>Issuer</dt> <dd>${parseDistinguishedName(cert.issuer)}</dd>
-      
-      <dt class="group-header">Period of Validity</dt>
-      <dt>Not Before</dt> <dd>${formatDate(cert.validity.start)}</dd>
-      <dt>Not After</dt> <dd>${formatDate(cert.validity.end)}</dd>
+  // Helper to add a row to the description list
+  const addRow = (term, description, ...classes) => {
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    
+    const dd = document.createElement('dd');
+    if (typeof description === 'string') {
+      dd.textContent = description;
+    } else {
+      dd.appendChild(description); // Append if it's already a DOM element
+    }
 
-      <dt class="group-header">Fingerprints & Serial</dt>
-      <dt>Serial</dt> <dd class="fingerprint">${cert.serialNumber}</dd>
-      <dt>SHA-256</dt> <dd class="fingerprint">${cert.fingerprint.sha256}</dd>
-      <dt>SHA-1</dt> <dd class="fingerprint">${cert.fingerprint.sha1}</dd>
-    </dl>
-  `;
+    if (classes.length) {
+      dd.classList.add(...classes);
+    }
+    
+    dl.appendChild(dt);
+    dl.appendChild(dd);
+  };
+
+  // Helper to add a full-width group header
+  const addHeader = (text) => {
+    const dt = document.createElement('dt');
+    dt.className = 'group-header';
+    dt.textContent = text;
+    dl.appendChild(dt);
+  };
+  
+  addHeader('Subject & Issuer');
+  addRow('Subject', parseDistinguishedName(cert.subject));
+  addRow('Issuer', parseDistinguishedName(cert.issuer));
+  
+  addHeader('Period of Validity');
+  addRow('Not Before', formatDate(cert.validity.start));
+  addRow('Not After', formatDate(cert.validity.end));
+
+  addHeader('Fingerprints & Serial');
+  addRow('Serial', cert.serialNumber, 'fingerprint');
+  addRow('SHA-256', cert.fingerprint.sha256, 'fingerprint');
+  addRow('SHA-1', cert.fingerprint.sha1, 'fingerprint');
+
+  return dl;
 }
 
 /**
- * Generates the complete HTML for the certificate chain and connection details.
+ * Generates the complete UI from the securityInfo object.
  */
 function generateFullHtml(securityInfo) {
-  let html = '<h2>Connection Details</h2>';
-  html += '<dl class="connection-details">';
-  html += `<dt>Protocol</dt> <dd>${securityInfo.protocolVersion || 'N/A'}</dd>`;
-  html += `<dt>Cipher Suite</dt> <dd>${securityInfo.cipherSuite || 'N/A'}</dd>`;
-  html += `<dt>Key Exchange</dt> <dd>${securityInfo.keaGroupName || 'N/A'}</dd>`;
+  const fragment = document.createDocumentFragment();
+
+  // Create Connection Details section
+  const h2Details = document.createElement('h2');
+  h2Details.textContent = 'Connection Details';
+  fragment.appendChild(h2Details);
+
+  const dlDetails = document.createElement('dl');
+  dlDetails.className = 'connection-details';
+  
+  const addConnectionRow = (term, description) => {
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.textContent = description;
+    dlDetails.appendChild(dt);
+    dlDetails.appendChild(dd);
+  };
+
+  addConnectionRow('Protocol', securityInfo.protocolVersion || 'N/A');
+  addConnectionRow('Cipher Suite', securityInfo.cipherSuite || 'N/A');
+  addConnectionRow('Key Exchange', securityInfo.keaGroupName || 'N/A');
   if (securityInfo.signatureSchemeName) {
-    html += `<dt>Signature</dt> <dd>${securityInfo.signatureSchemeName}</dd>`;
+    addConnectionRow('Signature', securityInfo.signatureSchemeName);
   }
   if (securityInfo.hsts !== undefined) {
-    html += `<dt>HSTS Active</dt> <dd>${securityInfo.hsts ? 'Yes' : 'No'}</dd>`;
+    addConnectionRow('HSTS Active', securityInfo.hsts ? 'Yes' : 'No');
   }
   if (securityInfo.isExtendedValidation !== undefined) {
-    html += `<dt>EV Cert</dt> <dd>${securityInfo.isExtendedValidation ? 'Yes' : 'No'}</dd>`;
+    addConnectionRow('EV Cert', securityInfo.isExtendedValidation ? 'Yes' : 'No');
   }
   if (securityInfo.certificateTransparencyStatus) {
     const ctStatus = securityInfo.certificateTransparencyStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    html += `<dt>Transparency</dt> <dd>${ctStatus}</dd>`;
+    addConnectionRow('Transparency', ctStatus);
   }
-  html += '</dl>';
+  fragment.appendChild(dlDetails);
 
-  html += '<h2>Certificate Chain</h2>';
+  // Create Certificate Chain section
+  const h2Chain = document.createElement('h2');
+  h2Chain.textContent = 'Certificate Chain';
+  fragment.appendChild(h2Chain);
+
   securityInfo.certificates.forEach((cert, index) => {
-    const isOpen = index === 0 ? 'open' : '';
-    html += `
-      <details ${isOpen}>
-        <summary>${getCN(cert.subject)}</summary>
-        ${formatCertDetails(cert)}
-      </details>
-    `;
+    const details = document.createElement('details');
+    if (index === 0) {
+      details.open = true;
+    }
+    
+    const summary = document.createElement('summary');
+    summary.textContent = getCN(cert.subject);
+    
+    details.appendChild(summary);
+    details.appendChild(formatCertDetails(cert));
+    fragment.appendChild(details);
   });
-  return html;
+
+  return fragment;
 }
 
 // Main function to get stored security info
 async function displayInfoForActiveTab() {
   const contentDiv = document.getElementById('content');
+  contentDiv.textContent = ''; // Clear previous content safely
+
+  // Helper to display an error message
+  const showError = (message) => {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error';
+    errorDiv.textContent = message;
+    contentDiv.appendChild(errorDiv);
+  };
+
   try {
     const background = await browser.runtime.getBackgroundPage();
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
 
     if (!tab) {
-      contentDiv.innerHTML = '<div class="error">No active tab found.</div>';
+      showError('No active tab found.');
       return;
     }
     
     if (!tab.url.startsWith('https')) {
-      contentDiv.innerHTML = '<div class="error">This page is not secure (HTTP).<br>No certificate to show.</div>';
+      showError('This page is not secure (HTTP). No certificate to show.');
       return;
     }
 
     const securityInfo = background.tabSecurityInfo[tab.id];
 
     if (securityInfo && securityInfo.state !== 'insecure') {
-      contentDiv.innerHTML = generateFullHtml(securityInfo);
+      contentDiv.appendChild(generateFullHtml(securityInfo));
     } else {
-      contentDiv.innerHTML = '<div class="error">No certificate information captured yet. Please reload the page and try again.</div>';
+      showError('No certificate information captured yet. Please reload the page and try again.');
     }
   } catch (error) {
     console.error("Error retrieving security info from background script:", error);
-    contentDiv.innerHTML = '<div class="error">Could not retrieve certificate information.</div>';
+    showError('Could not retrieve certificate information.');
   }
 }
 
