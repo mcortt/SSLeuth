@@ -1,0 +1,36 @@
+{
+  "manifest_version": 2,
+  "name": "SSLeuth",
+  "version": "1.0",
+  "description": "Displays connection and certificate details for the current page.",
+  "author": "mcortt",
+  "icons": {
+    "128": "icons/icon.svg",
+    "96": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "32": "icons/icon.svg",
+    "16": "icons/icon.svg"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "permissions": [
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+
+  "browser_action": {
+    "default_icon": "icons/icon.svg",
+    "default_title": "View Certificate",
+    "default_popup": "popup/popup.html"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ssleuth@certs"
+    }
+  }
+}
