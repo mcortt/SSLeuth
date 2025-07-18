@@ -14,9 +14,11 @@ function parseDistinguishedName(dn) {
   const parts = sanitizedDn.split(',');
   let html = '<ul class="dn-list">';
   parts.forEach(part => {
-    const [key, ...valueParts] = part.split('=');
-    const value = valueParts.join('=').replace(/&#44;/g, ',');
-    html += `<li><strong>${key.trim()}:</strong> <span>${value.trim()}</span></li>`;
+    if (part.includes('=')) {
+      const [key, ...valueParts] = part.split('=');
+      const value = valueParts.join('=').replace(/&#44;/g, ',');
+      html += `<li><strong>${key.trim()}</strong><span>${value.trim()}</span></li>`;
+    }
   });
   html += '</ul>';
   return html;
@@ -55,7 +57,6 @@ function generateFullHtml(securityInfo) {
   html += `<dt>Protocol</dt> <dd>${securityInfo.protocolVersion || 'N/A'}</dd>`;
   html += `<dt>Cipher Suite</dt> <dd>${securityInfo.cipherSuite || 'N/A'}</dd>`;
   html += `<dt>Key Exchange</dt> <dd>${securityInfo.keaGroupName || 'N/A'}</dd>`;
-  
   if (securityInfo.signatureSchemeName) {
     html += `<dt>Signature</dt> <dd>${securityInfo.signatureSchemeName}</dd>`;
   }
@@ -66,11 +67,9 @@ function generateFullHtml(securityInfo) {
     html += `<dt>EV Cert</dt> <dd>${securityInfo.isExtendedValidation ? 'Yes' : 'No'}</dd>`;
   }
   if (securityInfo.certificateTransparencyStatus) {
-    // Format "policy_compliant" to "Policy Compliant" for readability
     const ctStatus = securityInfo.certificateTransparencyStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     html += `<dt>Transparency</dt> <dd>${ctStatus}</dd>`;
   }
-
   html += '</dl>';
 
   html += '<h2>Certificate Chain</h2>';
