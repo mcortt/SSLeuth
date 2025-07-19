@@ -10,9 +10,11 @@ function fetchSecurityInfo(details) {
   return browser.webRequest.getSecurityInfo(details.requestId, {
     certificateChain: true
   }).then(securityInfo => {
+    // Store all the data for the popup to check
     tabSecurityInfo[details.tabId] = {
       info: securityInfo,
-      statusLine: details.statusLine || null
+      statusLine: details.statusLine || null,
+      url: details.url // Store the URL this data belongs to
     };
   }).catch(error => {
     console.error(`Error fetching security info for tab ${details.tabId}:`, error);

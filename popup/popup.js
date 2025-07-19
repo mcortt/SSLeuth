@@ -8,23 +8,17 @@ function getCN(subject) {
 function parseDistinguishedName(dn) {
   const list = document.createElement('ul');
   list.className = 'dn-list';
-  
   const sanitizedDn = dn.replace(/"([^"]+)"/g, (match, p1) => p1.replace(/,/g, '&#44;'));
   const parts = sanitizedDn.split(',');
-
   parts.forEach(part => {
     if (part.includes('=')) {
       const [key, ...valueParts] = part.split('=');
       const value = valueParts.join('=').replace(/&#44;/g, ',');
-
       const listItem = document.createElement('li');
-      
       const keyStrong = document.createElement('strong');
       keyStrong.textContent = key.trim();
-
       const valueSpan = document.createElement('span');
       valueSpan.textContent = value.trim();
-      
       listItem.appendChild(keyStrong);
       listItem.appendChild(valueSpan);
       list.appendChild(listItem);
@@ -64,11 +58,9 @@ function formatCertDetails(cert) {
   addHeader('Subject & Issuer');
   addRow('Subject', parseDistinguishedName(cert.subject));
   addRow('Issuer', parseDistinguishedName(cert.issuer));
-  
   addHeader('Period of Validity');
   addRow('Not Before', formatDate(cert.validity.start));
   addRow('Not After', formatDate(cert.validity.end));
-
   addHeader('Fingerprints & Serial');
   addRow('Serial', cert.serialNumber, 'fingerprint');
   addRow('SHA-256', cert.fingerprint.sha256, 'fingerprint');
@@ -82,6 +74,45 @@ function generateFullHtml(data) {
   const securityInfo = data.info;
   const fragment = document.createDocumentFragment();
 
+  // Determine the final display state and reason message.
+  let displayState = 'secure';
+  let displayMessage = 'SECURE';
+  let reason = null;
+
+  const isCtNonCompliant = securityInfo.certificateTransparencyStatus &&
+                         securityInfo.certificateTransparencyStatus !== 'policy_compliant' &&
+                         securityInfo.certificateTransparencyStatus !== 'not_applicable';
+  const hasNoCerts = !securityInfo.certificates || securityInfo.certificates.length === 0;
+  
+  if (securityInfo.state === 'insecure') {
+    displayState = 'insecure';
+    displayMessage = 'INSECURE';
+    reason = 'This connection is not encrypted.';
+  } else if (securityInfo.state === 'broken' || securityInfo.state === 'weak' || isCtNonCompliant || hasNoCerts) {
+    displayState = 'warning';
+    displayMessage = 'WARNING';
+    if (securityInfo.errorMessage) {
+      reason = `The certificate has an issue. (Error: ${securityInfo.errorMessage})`;
+    } else {
+      reason = 'The certificate has an issue (e.g., expired, self-signed, hostname mismatch, untrusted issuer, CT policy violation, etc.).';
+    }
+  }
+
+  // Create the status badge based on our new logic
+  const statusDiv = document.createElement('div');
+  statusDiv.className = `status-badge status-${displayState}`;
+  statusDiv.textContent = displayMessage;
+  fragment.appendChild(statusDiv);
+
+  // If there's a reason for the warning/insecure state, display it
+  if (reason) {
+    const reasonDiv = document.createElement('div');
+    reasonDiv.className = `reason-box reason-${displayState}`;
+    reasonDiv.textContent = reason;
+    fragment.appendChild(reasonDiv);
+  }
+
+  // Always show Connection Details
   const h2Details = document.createElement('h2');
   h2Details.textContent = 'Connection Details';
   fragment.appendChild(h2Details);
@@ -98,42 +129,37 @@ function generateFullHtml(data) {
     dlDetails.appendChild(dd);
   };
 
-  if (data.statusLine) {
-    addConnectionRow('HTTP Status', data.statusLine);
-  }
+  if (data.statusLine) addConnectionRow('HTTP Status', data.statusLine);
   addConnectionRow('Protocol', securityInfo.protocolVersion || 'N/A');
-  addConnectionRow('Cipher Suite', securityInfo.cipherSuite || 'N/A');
-  addConnectionRow('Key Exchange', securityInfo.keaGroupName || 'N/A');
-  if (securityInfo.signatureSchemeName) {
-    addConnectionRow('Signature', securityInfo.signatureSchemeName);
-  }
-  if (securityInfo.hsts !== undefined) {
-    addConnectionRow('HSTS Active', securityInfo.hsts ? 'Yes' : 'No');
-  }
-  if (securityInfo.isExtendedValidation !== undefined) {
-    addConnectionRow('EV Cert', securityInfo.isExtendedValidation ? 'Yes' : 'No');
-  }
+  if (securityInfo.cipherSuite) addConnectionRow('Cipher Suite', `${securityInfo.cipherSuite} (${securityInfo.secretKeyLength || 'N/A'}-bit)`);
+  if (securityInfo.keaGroupName) addConnectionRow('Key Exchange', securityInfo.keaGroupName);
+  if (securityInfo.signatureSchemeName) addConnectionRow('Signature', securityInfo.signatureSchemeName);
+  if (securityInfo.usedEch !== undefined) addConnectionRow('Encrypted Hello', securityInfo.usedEch ? 'Yes' : 'No');
+  if (securityInfo.usedPrivateDns !== undefined) addConnectionRow('Secure DNS', securityInfo.usedPrivateDns ? 'Yes' : 'No');
+  if (securityInfo.usedOcsp !== undefined) addConnectionRow('OCSP Verified', securityInfo.usedOcsp ? 'Yes' : 'No');
+  if (securityInfo.hsts !== undefined) addConnectionRow('HSTS Active', securityInfo.hsts ? 'Yes' : 'No');
+  if (securityInfo.isExtendedValidation !== undefined) addConnectionRow('EV Cert', securityInfo.isExtendedValidation ? 'Yes' : 'No');
   if (securityInfo.certificateTransparencyStatus) {
     const ctStatus = securityInfo.certificateTransparencyStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     addConnectionRow('Transparency', ctStatus);
   }
   fragment.appendChild(dlDetails);
 
-  const h2Chain = document.createElement('h2');
-  h2Chain.textContent = 'Certificate Chain';
-  fragment.appendChild(h2Chain);
+  // Only show Certificate Chain if certificates exist.
+  if (securityInfo.certificates && securityInfo.certificates.length > 0) {
+    const h2Chain = document.createElement('h2');
+    h2Chain.textContent = 'Certificate Chain';
+    fragment.appendChild(h2Chain);
 
-  securityInfo.certificates.forEach((cert, index) => {
-    const details = document.createElement('details');
-    if (index === 0) {
-      details.open = true;
-    }
-    const summary = document.createElement('summary');
-    summary.textContent = getCN(cert.subject);
-    details.appendChild(summary);
-    details.appendChild(formatCertDetails(cert));
-    fragment.appendChild(details);
-  });
+    securityInfo.certificates.forEach((cert, index) => {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = getCN(cert.subject);
+      details.appendChild(summary);
+      details.appendChild(formatCertDetails(cert));
+      fragment.appendChild(details);
+    });
+  }
 
   return fragment;
 }
@@ -159,17 +185,16 @@ async function displayInfoForActiveTab() {
       return;
     }
     
-    if (!tab.url.startsWith('https')) {
-      showError('This page is not secure (HTTP). No certificate to show.');
-      return;
-    }
-
     const storedData = background.tabSecurityInfo[tab.id];
 
-    if (storedData && storedData.info && storedData.info.state !== 'insecure') {
+    if (storedData && storedData.url === tab.url && storedData.info) {
       contentDiv.appendChild(generateFullHtml(storedData));
     } else {
-      showError('No certificate information captured yet. Please reload the page and try again.');
+      if (tab.url.startsWith('http:')) {
+        contentDiv.appendChild(generateFullHtml({ info: { state: 'insecure' } }));
+      } else {
+        showError('No certificate information captured for this page. Please reload to update.');
+      }
     }
   } catch (error) {
     console.error("Error retrieving security info from background script:", error);

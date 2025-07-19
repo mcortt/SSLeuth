@@ -12,6 +12,8 @@
       --border-color: #38383a;
       --hover-color: #48484a;
       --error-color: #ff453a;
+      --warn-color: #ffcc00;
+      --ok-color: #30d158;
     }
     body {
       min-width: 350px;
@@ -144,6 +146,28 @@
     .dn-list li span {
       word-break: break-all;
     }
+    .status-badge {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 16px;
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+    .status-secure { background-color: var(--ok-color); color: #000; }
+    .status-warning { background-color: var(--warn-color); color: #000; }
+    .status-insecure { background-color: var(--error-color); color: #fff; }
+
+    .reason-box {
+        background-color: var(--surface-color);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+    .reason-warning { border-left: 3px solid var(--warn-color); }
+    .reason-insecure { border-left: 3px solid var(--error-color); }
   </style>
 </head>
 <body>
