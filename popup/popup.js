@@ -1,14 +1,10 @@
-/**
- * Helper to get the Common Name (CN) from a subject string.
- */
+// Extracts the Common Name (CN) from a certificate subject string.
 function getCN(subject) {
   const cnMatch = subject.match(/CN=([^,]+)/);
   return cnMatch ? cnMatch[1] : 'Details';
 }
 
-/**
- * Parses a Distinguished Name string into a <ul> element for side-by-side display.
- */
+// Creates a list of key/value pairs from a certificate's subject or issuer string.
 function parseDistinguishedName(dn) {
   const list = document.createElement('ul');
   list.className = 'dn-list';
@@ -37,35 +33,27 @@ function parseDistinguishedName(dn) {
   return list;
 }
 
-/**
- * Formats the details for a single certificate into a <dl> element.
- */
+// Builds the DOM element containing the details for a single certificate.
 function formatCertDetails(cert) {
   const formatDate = (epoch) => new Date(epoch).toLocaleDateString();
-  
   const dl = document.createElement('dl');
 
-  // Helper to add a row to the description list
   const addRow = (term, description, ...classes) => {
     const dt = document.createElement('dt');
     dt.textContent = term;
-    
     const dd = document.createElement('dd');
     if (typeof description === 'string') {
       dd.textContent = description;
     } else {
-      dd.appendChild(description); // Append if it's already a DOM element
+      dd.appendChild(description);
     }
-
     if (classes.length) {
       dd.classList.add(...classes);
     }
-    
     dl.appendChild(dt);
     dl.appendChild(dd);
   };
 
-  // Helper to add a full-width group header
   const addHeader = (text) => {
     const dt = document.createElement('dt');
     dt.className = 'group-header';
@@ -89,13 +77,11 @@ function formatCertDetails(cert) {
   return dl;
 }
 
-/**
- * Generates the complete UI from the securityInfo object.
- */
-function generateFullHtml(securityInfo) {
+// Builds the entire UI for the popup.
+function generateFullHtml(data) {
+  const securityInfo = data.info;
   const fragment = document.createDocumentFragment();
 
-  // Create Connection Details section
   const h2Details = document.createElement('h2');
   h2Details.textContent = 'Connection Details';
   fragment.appendChild(h2Details);
@@ -112,6 +98,9 @@ function generateFullHtml(securityInfo) {
     dlDetails.appendChild(dd);
   };
 
+  if (data.statusLine) {
+    addConnectionRow('HTTP Status', data.statusLine);
+  }
   addConnectionRow('Protocol', securityInfo.protocolVersion || 'N/A');
   addConnectionRow('Cipher Suite', securityInfo.cipherSuite || 'N/A');
   addConnectionRow('Key Exchange', securityInfo.keaGroupName || 'N/A');
@@ -130,7 +119,6 @@ function generateFullHtml(securityInfo) {
   }
   fragment.appendChild(dlDetails);
 
-  // Create Certificate Chain section
   const h2Chain = document.createElement('h2');
   h2Chain.textContent = 'Certificate Chain';
   fragment.appendChild(h2Chain);
@@ -140,10 +128,8 @@ function generateFullHtml(securityInfo) {
     if (index === 0) {
       details.open = true;
     }
-    
     const summary = document.createElement('summary');
     summary.textContent = getCN(cert.subject);
-    
     details.appendChild(summary);
     details.appendChild(formatCertDetails(cert));
     fragment.appendChild(details);
@@ -152,12 +138,11 @@ function generateFullHtml(securityInfo) {
   return fragment;
 }
 
-// Main function to get stored security info
+// Main function that runs when the popup is opened.
 async function displayInfoForActiveTab() {
   const contentDiv = document.getElementById('content');
-  contentDiv.textContent = ''; // Clear previous content safely
+  contentDiv.textContent = ''; // Clear previous content
 
-  // Helper to display an error message
   const showError = (message) => {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error';
@@ -179,10 +164,10 @@ async function displayInfoForActiveTab() {
       return;
     }
 
-    const securityInfo = background.tabSecurityInfo[tab.id];
+    const storedData = background.tabSecurityInfo[tab.id];
 
-    if (securityInfo && securityInfo.state !== 'insecure') {
-      contentDiv.appendChild(generateFullHtml(securityInfo));
+    if (storedData && storedData.info && storedData.info.state !== 'insecure') {
+      contentDiv.appendChild(generateFullHtml(storedData));
     } else {
       showError('No certificate information captured yet. Please reload the page and try again.');
     }
@@ -192,5 +177,4 @@ async function displayInfoForActiveTab() {
   }
 }
 
-// Run the function when the popup opens
 displayInfoForActiveTab();
