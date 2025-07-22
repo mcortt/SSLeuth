@@ -1,24 +1,24 @@
-# SSLeuth: Certificate & Security Viewer
+_An open-source browser extension that provides a detailed, easy-to-read view of any website's TLS/SSL certificate and connection security._
 
-_A Firefox for Android browser extension that provides a detailed, easy-to-read view of the current page's TLS connection and certificate chain. Activated from the toolbar, it presents complex security information in a clean, user-friendly popup._
----
-## Features
+### Why SSLeuth?
 
-* **Comprehensive Connection Details**
-    > Displays protocol version, cipher suite, key exchange, signature scheme, and the status for HSTS, Extended Validation (EV), and Certificate Transparency.
+Modern browsers, especially on mobile, often hide important security details. SSLeuth brings this crucial information back, allowing developers, security professionals, and curious users to see exactly how their connection is secured.
+
+### Features
+
+* **At-a-Glance Security Status**
+    > A prominent, color-coded badge clearly labels the connection as **SECURE** (Green), **WARNING** (Yellow), or **INSECURE** (Red). It provides a simple, clear reason for any non-secure status.
+
+* **Detailed Connection Analysis**
+    > Get a complete picture of the TLS connection with details that are normally hidden, including the HTTP protocol version, cipher suite, key exchange group, HSTS status, and more.
 
 * **Full Certificate Chain Inspection**
-    > Shows the entire certificate chain in collapsible sections. Each certificate's details are available, including Subject and Issuer names, validity period, serial number, and SHA-256/SHA-1 fingerprints.
+    > Dive deep into the certificate chain with a clean, collapsible interface. Each certificate's **Subject**, **Issuer**, **Validity Period**, and **Fingerprints** are parsed into an easy-to-read format.
 
 * **Robust and Accurate**
-    > Uses background listeners to capture fresh data directly from network requests. It intelligently clears stale information during cached (back/forward) navigations to ensure accuracy.
-
-* **Polished Design**
-    > Features a custom-built dark theme for readability and a self-theming toolbar icon that automatically adapts to your browser's light or dark mode.
-
----
+    > SSLeuth uses background listeners to capture security information directly from network requests and intelligently handles cached navigations (like using the back/forward buttons) to prevent showing stale data.
 
 ## Installation
-
-1.  Download the latest release `.zip` file from the `[Releases](https://github.com/your-username/your-repo/releases)` page.
-2.  Follow the guide for `[testing on Android](https://extensionworkshop.com/documentation/develop/testing-on-android/)` to install the add-on through a custom add-on collection.
+Get it from Mozilla Add-Ons: https://addons.mozilla.org/en-US/firefox/addon/ssleuth/
+-or-
+Download the latest release `.zip` file "SSLeuth.zip" from above.

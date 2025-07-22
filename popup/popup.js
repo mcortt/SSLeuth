@@ -153,7 +153,7 @@ function generateFullHtml(data) {
   if (securityInfo.keaGroupName) addConnectionRow('Key Exchange', securityInfo.keaGroupName);
   if (securityInfo.signatureSchemeName) addConnectionRow('Signature', securityInfo.signatureSchemeName);
   if (securityInfo.usedEch !== undefined) addConnectionRow('Encrypted Hello', securityInfo.usedEch ? 'Yes' : 'No');
-  if (securityInfo.usedSecureDns !== undefined) addConnectionRow('Secure DNS', securityInfo.usedSecureDns ? 'Yes' : 'No');
+  if (securityInfo.usedPrivateDns !== undefined) addConnectionRow('Private DNS', securityInfo.usedPrivateDns ? 'Yes' : 'No');
   if (securityInfo.hsts !== undefined) addConnectionRow('HSTS Active', securityInfo.hsts ? 'Yes' : 'No');
   if (securityInfo.isExtendedValidation !== undefined) addConnectionRow('EV Cert', securityInfo.isExtendedValidation ? 'Yes' : 'No');
   if (securityInfo.certificateTransparencyStatus) {
