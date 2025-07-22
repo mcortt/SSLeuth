@@ -4,6 +4,26 @@ function getCN(subject) {
   return cnMatch ? cnMatch[1] : 'Details';
 }
 
+// Checks a cipher suite for weaknesses and returns the reason, or null if it's secure.
+function getCipherWeaknessReason(suiteName) {
+  if (!suiteName || !suiteName.startsWith('TLS_')) {
+    return null; // Not a classic TLS suite name or not provided.
+  }
+  if (suiteName.startsWith('TLS_RSA_WITH_')) {
+    return 'Lacks Perfect Forward Secrecy (PFS).';
+  }
+  if (suiteName.includes('_CBC_')) {
+    return 'Uses an outdated CBC encryption mode.';
+  }
+  if (suiteName.includes('_RC4_')) {
+    return 'Uses the insecure RC4 cipher.';
+  }
+  if (suiteName.includes('_3DES_')) {
+    return 'Uses the outdated 3DES cipher.';
+  }
+  return null; // Considered secure by our checks
+}
+
 // Creates a list of key/value pairs from a certificate's subject or issuer string.
 function parseDistinguishedName(dn) {
   const list = document.createElement('ul');
@@ -79,32 +99,30 @@ function generateFullHtml(data) {
   let displayMessage = 'SECURE';
   let reason = null;
 
-  const isCtNonCompliant = securityInfo.certificateTransparencyStatus &&
-                         securityInfo.certificateTransparencyStatus !== 'policy_compliant' &&
-                         securityInfo.certificateTransparencyStatus !== 'not_applicable';
+  const isCipherWeak = getCipherWeaknessReason(securityInfo.cipherSuite);
   const hasNoCerts = !securityInfo.certificates || securityInfo.certificates.length === 0;
-  
+
   if (securityInfo.state === 'insecure') {
     displayState = 'insecure';
     displayMessage = 'INSECURE';
     reason = 'This connection is not encrypted.';
-  } else if (securityInfo.state === 'broken' || securityInfo.state === 'weak' || isCtNonCompliant || hasNoCerts) {
-    displayState = 'warning';
-    displayMessage = 'WARNING';
-    if (securityInfo.errorMessage) {
-      reason = `The certificate has an issue. (Error: ${securityInfo.errorMessage})`;
-    } else {
-      reason = 'The certificate has an issue (e.g., expired, self-signed, hostname mismatch, untrusted issuer, CT policy violation, etc.).';
-    }
+  } else if (securityInfo.state === 'broken' || (securityInfo.state === 'secure' && hasNoCerts)) {
+    displayState = 'broken';
+    displayMessage = 'BROKEN';
+    reason = 'The certificate has an issue (e.g., expired, self-signed, hostname mismatch, etc.).';
+  } else if (securityInfo.state === 'weak' || isCipherWeak) {
+    displayState = 'weak';
+    displayMessage = 'WEAK';
+    reason = isCipherWeak || 'The connection is using a weak protocol.';
   }
 
-  // Create the status badge based on our new logic
+  // Create the status badge
   const statusDiv = document.createElement('div');
   statusDiv.className = `status-badge status-${displayState}`;
   statusDiv.textContent = displayMessage;
   fragment.appendChild(statusDiv);
 
-  // If there's a reason for the warning/insecure state, display it
+  // If there's a reason for the non-secure state, display it
   if (reason) {
     const reasonDiv = document.createElement('div');
     reasonDiv.className = `reason-box reason-${displayState}`;
@@ -135,8 +153,7 @@ function generateFullHtml(data) {
   if (securityInfo.keaGroupName) addConnectionRow('Key Exchange', securityInfo.keaGroupName);
   if (securityInfo.signatureSchemeName) addConnectionRow('Signature', securityInfo.signatureSchemeName);
   if (securityInfo.usedEch !== undefined) addConnectionRow('Encrypted Hello', securityInfo.usedEch ? 'Yes' : 'No');
-  if (securityInfo.usedPrivateDns !== undefined) addConnectionRow('Secure DNS', securityInfo.usedPrivateDns ? 'Yes' : 'No');
-  if (securityInfo.usedOcsp !== undefined) addConnectionRow('OCSP Verified', securityInfo.usedOcsp ? 'Yes' : 'No');
+  if (securityInfo.usedSecureDns !== undefined) addConnectionRow('Secure DNS', securityInfo.usedSecureDns ? 'Yes' : 'No');
   if (securityInfo.hsts !== undefined) addConnectionRow('HSTS Active', securityInfo.hsts ? 'Yes' : 'No');
   if (securityInfo.isExtendedValidation !== undefined) addConnectionRow('EV Cert', securityInfo.isExtendedValidation ? 'Yes' : 'No');
   if (securityInfo.certificateTransparencyStatus) {

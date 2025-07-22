@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <title>SSLeuth Icon (Black)</title>
+  <g stroke="#0c0c0d" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M40 52v-13c0-10.8 8.85-19.5 19.5-19.5s19.5 8.7 19.5 19.5v13" />
+    
+    <rect x="34" y="52" width="52" height="52" rx="6" ry="6"/>
+    
+    <circle cx="60" cy="78" r="4"/>
+    <line x1="60" y1="82" x2="60" y2="90"/>  
+  </g>
+</svg>

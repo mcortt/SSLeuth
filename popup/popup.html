@@ -11,9 +11,9 @@
       --text-secondary-color: #8d8d92;
       --border-color: #38383a;
       --hover-color: #48484a;
-      --error-color: #ff453a;
-      --warn-color: #ffcc00;
-      --ok-color: #30d158;
+      --red-color: #ff453a;
+      --yellow-color: #ffcc00;
+      --green-color: #30d158;
     }
     body {
       min-width: 350px;
@@ -118,7 +118,7 @@
       line-height: 1.4;
     }
     .error {
-      color: var(--error-color);
+      color: var(--red-color);
       font-weight: bold;
       padding: 10px;
     }
@@ -155,9 +155,9 @@
       font-size: 16px;
       border: 1px solid rgba(0,0,0,0.2);
     }
-    .status-secure { background-color: var(--ok-color); color: #000; }
-    .status-warning { background-color: var(--warn-color); color: #000; }
-    .status-insecure { background-color: var(--error-color); color: #fff; }
+    .status-secure { background-color: var(--green-color); color: #000; }
+    .status-weak { background-color: var(--yellow-color); color: #000; }
+    .status-broken, .status-insecure { background-color: var(--red-color); color: #fff; }
 
     .reason-box {
         background-color: var(--surface-color);
@@ -166,8 +166,8 @@
         margin-bottom: 15px;
         font-size: 13px;
     }
-    .reason-warning { border-left: 3px solid var(--warn-color); }
-    .reason-insecure { border-left: 3px solid var(--error-color); }
+    .reason-weak { border-left: 3px solid var(--yellow-color); }
+    .reason-broken, .reason-insecure { border-left: 3px solid var(--red-color); }
   </style>
 </head>
 <body>
