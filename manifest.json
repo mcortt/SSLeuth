@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "SSLeuth",
-  "version": "1.6",
+  "version": "1.7.1",
   "description": "Displays connection and certificate details for the current page.",
   "author": "mcortt",
   "icons": {

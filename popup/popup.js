@@ -204,7 +204,21 @@ async function displayInfoForActiveTab() {
     
     const storedData = background.tabSecurityInfo[tab.id];
 
-    if (storedData && storedData.url === tab.url && storedData.info) {
+    // Check if the "core URL" (origin) matches, not the full URL.
+    let isDataValid = false;
+    if (storedData && storedData.url && storedData.info) {
+      try {
+        const currentOrigin = new URL(tab.url).origin;
+        const storedOrigin = new URL(storedData.url).origin;
+        if (currentOrigin === storedOrigin) {
+          isDataValid = true;
+        }
+      } catch (e) {
+        isDataValid = false;
+      }
+    }
+
+    if (isDataValid) {
       contentDiv.appendChild(generateFullHtml(storedData));
     } else {
       if (tab.url.startsWith('http:')) {
